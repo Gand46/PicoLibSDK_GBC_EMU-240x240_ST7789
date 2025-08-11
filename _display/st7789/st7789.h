@@ -31,7 +31,7 @@ extern "C" {
 #endif
 
 #ifndef WIDTH
-#define WIDTH		320		// display width
+#define WIDTH           240		// display width
 #endif
 
 #ifndef HEIGHT
@@ -72,9 +72,9 @@ extern "C" {
 #endif
 
 // DISP_SPI_BAUD	24000000
-// send data: 320x240x2 = 153600 B = 1 228 800 bits
-// transfer time: 51 ms, real time: 70 ms
-#define DISP_FRAME_MS (320*240*2*9*1000/DISP_SPI_BAUD)	// transfer time of whole frame in [ms]
+// send data: 240x240x2 = 115200 B = 921600 bits
+// transfer time: 38 ms, real time: 52 ms
+#define DISP_FRAME_MS (WIDTH*HEIGHT*2*9*1000/DISP_SPI_BAUD)	// transfer time of whole frame in [ms]
 
 // frame buffer in RGB 5-6-5 pixel format
 extern ALIGNED FRAMETYPE FrameBuf[];
