@@ -815,32 +815,27 @@ void FASTCODE NOFLASH(core1DrawFrame)()
 		s = &gbContext.framebuf[rinx*LCD_WIDTH];
 
 #if DEB_FPS			// debug display FPS
-		if (y < 16)
-		{
-			u16* s2 = &buf[16*y];
-			for (x = LCD_WIDTH; x > 0; x--)
-			{
-				if (x <= 8)
-				{
-					DispSendImg2(*s2++);
-					DispSendImg2(*s2++);
-				}
-				else
-				{
-					c = *s++;
-					DispSendImg2(c);
-					DispSendImg2(c);
-				}
-			}
-		}
-		else
+               if (y < 16)
+               {
+                       u16* s2 = &buf[16*y];
+                       for (x = 0; x < WIDTH; x++)
+                       {
+                               int xs2 = x * LCD_WIDTH / WIDTH;
+                               if (x < 16)
+                                       c = s2[x];
+                               else
+                                       c = s[xs2];
+                               DispSendImg2(c);
+                       }
+               }
+               else
 #endif
-		for (x = LCD_WIDTH; x > 0; x--)
-		{
-			c = *s++;
-			DispSendImg2(c);
-			DispSendImg2(c);
-		}
+               for (x = 0; x < WIDTH; x++)
+               {
+                       int xs2 = x * LCD_WIDTH / WIDTH;
+                       c = s[xs2];
+                       DispSendImg2(c);
+               }
 
 		// next source Y
 		// Check case: y = 239, old ys = 239*144/240 = 143, new ys2 = 240*144/240 = 144, it is OK
