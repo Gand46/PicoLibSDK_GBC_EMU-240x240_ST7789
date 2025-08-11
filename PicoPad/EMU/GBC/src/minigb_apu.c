@@ -16,6 +16,8 @@
 
 #define VOL_INIT_MAX    (INT16_MAX/8)
 #define VOL_INIT_MIN    (INT16_MIN/8)
+#define VOL_UNIT_MAX    (VOL_INIT_MAX / MAX_CHAN_VOLUME)
+#define VOL_UNIT_MIN    (VOL_INIT_MIN / MAX_CHAN_VOLUME)
 
 // Handles time keeping for sound generation.
 // FREQ_INC_REF must be equal to, or larger than AUDIO_SAMPLE_RATE in order
@@ -133,52 +135,59 @@ static void FASTCODE NOFLASH(update_sweep)(struct snd_chan *c)
 }
 
 // render square channel 0 or 1
+static const s8 volume_table[MAX_CHAN_VOLUME+1] =
+{
+       0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+};
+
 static void FASTCODE NOFLASH(update_square)(s16 *samples, const bool ch2, int samples_num)
 {
-	u32 freq;
-	struct snd_chan *c = chans + ch2;
+       u32 freq;
+       struct snd_chan *c = chans + ch2;
 
-	if (!c->powered || !c->enabled) return;
+       if (!c->powered || !c->enabled) return;
 
-	freq = DMG_CLOCK_FREQ_U / ((2048 - c->freq) << 5);
-	set_note_freq(c, freq);
-	c->freq_inc *= 8;
+       freq = DMG_CLOCK_FREQ_U / ((2048 - c->freq) << 5);
+       set_note_freq(c, freq);
+       c->freq_inc *= 8;
 
-	s32 vol_l = pgb->vol_l;
-	s32 vol_r = pgb->vol_r;
+       s32 vol_l = pgb->vol_l;
+       s32 vol_r = pgb->vol_r;
+       s32 left = c->on_left ? vol_l : 0;
+       s32 right = c->on_right ? vol_r : 0;
+       s32 vol = volume_table[c->volume];
 
-	for (uint_fast16_t i = 0; i < samples_num*2; i += 2)
-	{
-		update_len(c);
+       for (uint_fast16_t i = 0; i < samples_num*2; i += 2)
+       {
+               update_len(c);
 
-		if (!c->enabled) continue;
+               if (!c->enabled) continue;
 
-		update_env(c);
-		if (!ch2) update_sweep(c);
+               update_env(c);
+               if (!ch2) update_sweep(c);
 
-		u32 pos = 0;
-		u32 prev_pos = 0;
-		s32 sample = 0;
+               u32 pos = 0;
+               u32 prev_pos = 0;
+               s32 sample = 0;
 
-		while (update_freq(c, &pos))
-		{
-			c->square.duty_counter = (c->square.duty_counter + 1) & 7;
-			sample += ((pos - prev_pos) / c->freq_inc) * c->val;
-			c->val = (c->square.duty & (1 << c->square.duty_counter)) ?
-						 VOL_INIT_MAX / MAX_CHAN_VOLUME :
-						 VOL_INIT_MIN / MAX_CHAN_VOLUME;
-			prev_pos = pos;
-		}
+               while (update_freq(c, &pos))
+               {
+                       c->square.duty_counter = (c->square.duty_counter + 1) & 7;
+                       sample += ((pos - prev_pos) / c->freq_inc) * c->val;
+                       c->val = (c->square.duty & (1 << c->square.duty_counter)) ?
+                                                VOL_UNIT_MAX :
+                                                VOL_UNIT_MIN;
+                       prev_pos = pos;
+               }
 
-		if (c->muted) continue;
+               if (c->muted) continue;
 
-		sample += c->val;
-		sample *= c->volume;
-		sample /= 4;
+               sample += c->val;
+               sample = (sample * vol) >> 2;
 
-		samples[i + 0] += sample * c->on_left * vol_l;
-		samples[i + 1] += sample * c->on_right * vol_r;
-	}
+               samples[i + 0] += sample * left;
+               samples[i + 1] += sample * right;
+       }
 }
 
 static u8 FASTCODE NOFLASH(wave_sample)(const unsigned int pos, const unsigned int volume)
@@ -281,22 +290,22 @@ static void FASTCODE NOFLASH(update_noise)(s16 *samples, int samples_num)
 
 		while (update_freq(c, &pos))
 		{
-			c->noise.lfsr_reg = (c->noise.lfsr_reg << 1) |
-						(c->val >= VOL_INIT_MAX / MAX_CHAN_VOLUME);
+                       c->noise.lfsr_reg = (c->noise.lfsr_reg << 1) |
+                                               (c->val >= VOL_UNIT_MAX);
 
 			if (c->noise.lfsr_wide)
 			{
-				c->val = !(((c->noise.lfsr_reg >> 14) & 1) ^
-						 ((c->noise.lfsr_reg >> 13) & 1)) ?
-						 VOL_INIT_MAX / MAX_CHAN_VOLUME :
-						 VOL_INIT_MIN / MAX_CHAN_VOLUME;
+                               c->val = !(((c->noise.lfsr_reg >> 14) & 1) ^
+                                                ((c->noise.lfsr_reg >> 13) & 1)) ?
+                                                VOL_UNIT_MAX :
+                                                VOL_UNIT_MIN;
 			}
 			else
 			{
-				c->val = !(((c->noise.lfsr_reg >> 6) & 1) ^
-						 ((c->noise.lfsr_reg >> 5) & 1)) ?
-						 VOL_INIT_MAX / MAX_CHAN_VOLUME :
-						 VOL_INIT_MIN / MAX_CHAN_VOLUME;
+                               c->val = !(((c->noise.lfsr_reg >> 6) & 1) ^
+                                                ((c->noise.lfsr_reg >> 5) & 1)) ?
+                                                VOL_UNIT_MAX :
+                                                VOL_UNIT_MIN;
 			}
 
 			sample += ((pos - prev_pos) / c->freq_inc) * c->val;
@@ -382,7 +391,7 @@ static void FASTCODE NOFLASH(chan_trigger)(uint_fast8_t i)
 	else if (i == 3)
 	{	// noise
 		c->noise.lfsr_reg = 0xFFFF;
-		c->val = VOL_INIT_MIN / MAX_CHAN_VOLUME;
+           c->val = VOL_UNIT_MIN;
 	}
 
 	c->len.inc = (256 * FREQ_INC_REF) / (AUDIO_SAMPLE_RATE * (len_max - c->len.load));
