@@ -16,7 +16,7 @@
 
 // >>> Keep tables and functions in RAM (without "const") for faster access.
 
-#define EMU_LCD_WIDTH	320	// LCD display width
+#define EMU_LCD_WIDTH   WIDTH	// LCD display width
 #define EMU_LCD_HEIGHT	240	// LCD display height
 
 // text screen buffer (only characters; 160 bytes)
@@ -125,14 +125,16 @@ void GB_TextPrintCenter(const char* txt)
 // update text screen on display (called from the GB_LCDRedraw function, do not call it directly)
 void GB_TextUpdate()
 {
-	u8 ch;
-	int line, col, pix;
-	u8* s = GB_TextFrame;
-	u16* c = GB_TextColor;
-	u16 cc, ccc;
-	u8* s2;
-	const u8* f = FontBold8x16;
-	u16 bg = GB_TextBgColor;
+       u8 ch;
+       int line, col, pix;
+       u8* s = GB_TextFrame;
+       u16* c = GB_TextColor;
+       u16 cc, ccc;
+       u8* s2;
+       const u8* f = FontBold8x16;
+       u16 bg = GB_TextBgColor;
+       int rep = WIDTH / (GB_MSG_WIDTH*FONTH);
+       int rem = WIDTH % (GB_MSG_WIDTH*FONTH);
 
 	// do not screenshot this screen
 	Bool oldscreenshot = DoEmuScreenShot;
@@ -144,28 +146,35 @@ void GB_TextUpdate()
 	// rows
 	for (line = 0; line < EMU_LCD_HEIGHT;)
 	{
-		cc = *c; // color of the row
-		s2 = s; // start of text row
+               cc = *c; // color of the row
+               s2 = s; // start of text row
+               int acc = 0;
 
-		// columns
-		for (col = 0; col < GB_MSG_WIDTH; col++)
-		{
-			// get character
-			ch = *s2++;
+               // columns
+               for (col = 0; col < GB_MSG_WIDTH; col++)
+               {
+                       // get character
+                       ch = *s2++;
 
-			// get font pixels
-			ch = f[ch];
+                       // get font pixels
+                       ch = f[ch];
 
-			// draw pixels
-			for (pix = 8; pix > 0; pix--)
-			{
-				// send color of the pixel (or black color of the background)
-				ccc = ((ch & 0x80) != 0) ? cc : bg;
-				DispSendImg2(ccc);
-				DispSendImg2(ccc);
-				ch <<= 1;
-			}
-		}
+                       // draw pixels
+                       for (pix = 8; pix > 0; pix--)
+                       {
+                               // send color of the pixel (or black color of the background)
+                               ccc = ((ch & 0x80) != 0) ? cc : bg;
+                               int n = rep;
+                               acc += rem;
+                               if (acc >= GB_MSG_WIDTH*FONTH)
+                               {
+                                       n++;
+                                       acc -= GB_MSG_WIDTH*FONTH;
+                               }
+                               for (; n > 0; n--) DispSendImg2(ccc);
+                               ch <<= 1;
+                       }
+               }
 
 		// increase line
 		line++;
