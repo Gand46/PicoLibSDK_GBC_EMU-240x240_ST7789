@@ -146,6 +146,8 @@ static void FASTCODE NOFLASH(update_square)(s16 *samples, const bool ch2, int sa
 
 	s32 vol_l = pgb->vol_l;
 	s32 vol_r = pgb->vol_r;
+	s32 out_left = c->on_left ? vol_l : 0;
+	s32 out_right = c->on_right ? vol_r : 0;
 
 	for (uint_fast16_t i = 0; i < samples_num*2; i += 2)
 	{
@@ -173,11 +175,10 @@ static void FASTCODE NOFLASH(update_square)(s16 *samples, const bool ch2, int sa
 		if (c->muted) continue;
 
 		sample += c->val;
-		sample *= c->volume;
-		sample /= 4;
+		sample = (sample * c->volume) >> 2;
 
-		samples[i + 0] += sample * c->on_left * vol_l;
-		samples[i + 1] += sample * c->on_right * vol_r;
+		samples[i + 0] += sample * out_left;
+		samples[i + 1] += sample * out_right;
 	}
 }
 

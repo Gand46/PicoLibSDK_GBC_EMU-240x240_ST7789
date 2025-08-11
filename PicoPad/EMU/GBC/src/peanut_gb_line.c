@@ -95,8 +95,13 @@ void FASTCODE NOFLASH(__gb_draw_line)(struct gb_s *gb)
 
 	u8 pixels[LCD_WIDTH];
 	u8 pixelsPrio[LCD_WIDTH];  // do these pixels have priority over OAM?
-	memset(pixels, 0, LCD_WIDTH);
-	memset(pixelsPrio, 0, LCD_WIDTH);
+	u32* p32 = (u32*)pixels;
+	u32* pp32 = (u32*)pixelsPrio;
+	for (int i = 0; i < LCD_WIDTH/4; i++)
+	{
+		p32[i] = 0;
+		pp32[i] = 0;
+	}
 
 	Bool cgbmode = gb->cgb.cgbMode;
 

@@ -251,6 +251,144 @@ static u8 op_cycles[0x100] =
 };
 static uint_fast16_t TAC_CYCLES[4] = {1024, 16, 64, 256};
 
+typedef void (*gb_opcode_fn)(struct gb_s *gb, u8 opcode);
+
+static void op_unimplemented(struct gb_s *gb, u8 opcode)
+{
+(void)gb;
+(void)opcode;
+}
+
+static void op_00(struct gb_s *gb, u8 opcode)
+{
+(void)opcode;
+}
+
+static void op_01(struct gb_s *gb, u8 opcode)
+{
+(void)opcode;
+gb->cpu_reg.bc.bytes.c = __gb_read(gb, gb->cpu_reg.pc.reg++);
+gb->cpu_reg.bc.bytes.b = __gb_read(gb, gb->cpu_reg.pc.reg++);
+}
+
+static void op_02(struct gb_s *gb, u8 opcode)
+{
+(void)opcode;
+__gb_write(gb, gb->cpu_reg.bc.reg, gb->cpu_reg.a);
+}
+
+static void op_03(struct gb_s *gb, u8 opcode)
+{
+(void)opcode;
+gb->cpu_reg.bc.reg++;
+}
+
+static void op_04(struct gb_s *gb, u8 opcode)
+{
+(void)opcode;
+gb->cpu_reg.bc.bytes.b++;
+gb->cpu_reg.f_bits.z = (gb->cpu_reg.bc.bytes.b == 0x00);
+gb->cpu_reg.f_bits.n = 0;
+gb->cpu_reg.f_bits.h = ((gb->cpu_reg.bc.bytes.b & 0x0F) == 0x00);
+}
+
+static void op_05(struct gb_s *gb, u8 opcode)
+{
+(void)opcode;
+PGB_INSTR_DEC_R8(gb->cpu_reg.bc.bytes.b);
+}
+
+static void op_06(struct gb_s *gb, u8 opcode)
+{
+(void)opcode;
+gb->cpu_reg.bc.bytes.b = __gb_read(gb, gb->cpu_reg.pc.reg++);
+}
+
+static void op_07(struct gb_s *gb, u8 opcode)
+{
+(void)opcode;
+gb->cpu_reg.a = (gb->cpu_reg.a << 1) | (gb->cpu_reg.a >> 7);
+gb->cpu_reg.f_bits.z = 0;
+gb->cpu_reg.f_bits.n = 0;
+gb->cpu_reg.f_bits.h = 0;
+gb->cpu_reg.f_bits.c = (gb->cpu_reg.a & 0x01);
+}
+
+static void op_08(struct gb_s *gb, u8 opcode)
+{
+(void)opcode;
+u8 h, l;
+u16 temp;
+l = __gb_read(gb, gb->cpu_reg.pc.reg++);
+h = __gb_read(gb, gb->cpu_reg.pc.reg++);
+temp = PEANUT_GB_U8_TO_U16(h,l);
+__gb_write(gb, temp++, gb->cpu_reg.sp.bytes.p);
+__gb_write(gb, temp, gb->cpu_reg.sp.bytes.s);
+}
+
+static void op_09(struct gb_s *gb, u8 opcode)
+{
+(void)opcode;
+uint_fast32_t temp = gb->cpu_reg.hl.reg + gb->cpu_reg.bc.reg;
+gb->cpu_reg.f_bits.n = 0;
+gb->cpu_reg.f_bits.h =
+(temp ^ gb->cpu_reg.hl.reg ^ gb->cpu_reg.bc.reg) & 0x1000 ? 1 : 0;
+gb->cpu_reg.f_bits.c = (temp & 0xFFFF0000) ? 1 : 0;
+gb->cpu_reg.hl.reg = (temp & 0x0000FFFF);
+}
+
+static void op_0A(struct gb_s *gb, u8 opcode)
+{
+(void)opcode;
+gb->cpu_reg.a = __gb_read(gb, gb->cpu_reg.bc.reg);
+}
+
+static void op_0B(struct gb_s *gb, u8 opcode)
+{
+(void)opcode;
+gb->cpu_reg.bc.reg--;
+}
+
+static void op_0C(struct gb_s *gb, u8 opcode)
+{
+(void)opcode;
+gb->cpu_reg.bc.bytes.c++;
+gb->cpu_reg.f_bits.z = (gb->cpu_reg.bc.bytes.c == 0x00);
+gb->cpu_reg.f_bits.n = 0;
+gb->cpu_reg.f_bits.h = ((gb->cpu_reg.bc.bytes.c & 0x0F) == 0x00);
+}
+
+static void op_0D(struct gb_s *gb, u8 opcode)
+{
+(void)opcode;
+PGB_INSTR_DEC_R8(gb->cpu_reg.bc.bytes.c);
+}
+
+static void op_0E(struct gb_s *gb, u8 opcode)
+{
+(void)opcode;
+gb->cpu_reg.bc.bytes.c = __gb_read(gb, gb->cpu_reg.pc.reg++);
+}
+
+static void op_0F(struct gb_s *gb, u8 opcode)
+{
+(void)opcode;
+gb->cpu_reg.f_bits.c = gb->cpu_reg.a & 0x01;
+gb->cpu_reg.a = (gb->cpu_reg.a >> 1) | (gb->cpu_reg.a << 7);
+gb->cpu_reg.f_bits.z = 0;
+gb->cpu_reg.f_bits.n = 0;
+gb->cpu_reg.f_bits.h = 0;
+}
+
+static gb_opcode_fn opcode_table[256] =
+{
+op_00, op_01, op_02, op_03,
+op_04, op_05, op_06, op_07,
+op_08, op_09, op_0A, op_0B,
+op_0C, op_0D, op_0E, op_0F,
+[0x10 ... 0xFF] = op_unimplemented
+};
+
 // Internal function used to step the CPU.
 void FASTCODE NOFLASH(__gb_step_cpu)(struct gb_s *gb)
 {
@@ -322,10 +460,12 @@ void FASTCODE NOFLASH(__gb_step_cpu)(struct gb_s *gb)
 	opcode = __gb_read(gb, gb->cpu_reg.pc.reg++);
 	inst_cycles = op_cycles[opcode];
 
-	// Execute opcode
-	switch(opcode)
-	{
-	case 0x00: // NOP
+// Execute opcode
+opcode_table[opcode](gb, opcode);
+#if 0
+switch(opcode)
+{
+case 0x00: // NOP
 		break;
 
 	case 0x01: // LD BC, imm
@@ -1778,13 +1918,14 @@ void FASTCODE NOFLASH(__gb_step_cpu)(struct gb_s *gb)
 		gb->cpu_reg.pc.reg = 0x0038;
 		break;
 
-	default:
-		// Return address where invlid opcode that was read.
-		//(gb->gb_error)(gb, GB_INVALID_OPCODE, gb->cpu_reg.pc.reg - 1);
-		//PGB_UNREACHABLE();
-		break;
-	}
-    } // if (gb->gb_pause)
+default:
+// Return address where invlid opcode that was read.
+//(gb->gb_error)(gb, GB_INVALID_OPCODE, gb->cpu_reg.pc.reg - 1);
+//PGB_UNREACHABLE();
+break;
+}
+#endif
+} // if (gb->gb_pause)
 
 	do
 	{

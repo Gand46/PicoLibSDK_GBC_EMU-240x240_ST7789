@@ -1224,16 +1224,19 @@ int main()
 		DelayLineUs = del;
 
 		// time synchronization
-		for (;;)
+		dif = Time() - OldSyncTime;
+		if (dif < EMU_SYNCTIME)
 		{
-			dif = Time() - OldSyncTime;
-			if (dif >= EMU_SYNCTIME) break;
-		}
-
-		if (dif >= 20*EMU_SYNCTIME)
+			sleep_us(EMU_SYNCTIME - dif);
 			OldSyncTime = Time();
+		}
 		else
-			OldSyncTime += EMU_SYNCTIME;
+		{
+			if (dif >= 20*EMU_SYNCTIME)
+				OldSyncTime = Time();
+			else
+				OldSyncTime += EMU_SYNCTIME;
+		}
 
 		// exit
 		if (GB_ReqExit)
