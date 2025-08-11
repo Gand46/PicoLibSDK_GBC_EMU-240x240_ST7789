@@ -122,6 +122,11 @@ void DispSendImg2(u16 data);
 // LOW level control: stop sending image data (follows after DispStartImg() and DispSendImg())
 void DispStopImg();
 
+#if USE_DISP_DMA               // use DMA output do LCD display
+// LOW level control: write data to display using DMA
+void DispWriteDataDMA(const void* data, int len);
+#endif
+
 // set strip of back buffer (-1 = use full FrameBuffer)
 INLINE void DispSetStrip(int inx) {}
 INLINE void DispSetStripNext() {}

@@ -44,6 +44,10 @@ struct gb_s gbContext;
 // game title CRC
 u16 TitleCrc;		// CRC16A of game title, game code, support code and maker code, address 0x0134..0x0145
 u8 TitleCrc2;		// game title small CRC (value from address 0x14d)
+// scaling lookup tables
+u8 lut_x[WIDTH];
+u8 lut_y[HEIGHT];
+
 
 #if DEB_FPS			// debug display FPS
 u32 DebFpsTime;			// last time FPS
@@ -747,127 +751,113 @@ void gbErrorHandler(struct gb_s *gb, const enum gb_error_e gb_err, const u16 add
 // draw one line from frame buffer
 void FASTCODE NOFLASH(core1DrawFrame)()
 {
-	int x, y, ys, ys2, rinx;
-	u16* s;
-	u16 c;
+        int x, y, ys, ys2, rinx;
+        u16* s;
+        u16 linebuf[WIDTH];
 
-#if DEB_FPS			// debug display FPS
-	u16 buf[16*16];
-	u8 d1 = DebFps/10 + '0';
-	u8 d2 = (DebFps % 10) + '0';
-	u16* d = buf;
-	for (y = 0; y < 16; y++)
-	{
-		u8 ch = FontBold8x16[d1 + y*256];
-		for (x = 8; x > 0; x--)
-		{
-			*d++ = (ch & 0x80) ? DebFpsCol : COL_BLACK;
-			ch <<= 1;
-		}
+#if DEB_FPS                     // debug display FPS
+        u16 buf[16*16];
+        u8 d1 = DebFps/10 + '0';
+        u8 d2 = (DebFps % 10) + '0';
+        u16* d = buf;
+        for (y = 0; y < 16; y++)
+        {
+                u8 ch = FontBold8x16[d1 + y*256];
+                for (x = 8; x > 0; x--)
+                {
+                        *d++ = (ch & 0x80) ? DebFpsCol : COL_BLACK;
+                        ch <<= 1;
+                }
 
-		ch = FontBold8x16[d2 + y*256];
-		for (x = 8; x > 0; x--)
-		{
-			*d++ = (ch & 0x80) ? DebFpsCol : COL_BLACK;
-			ch <<= 1;
-		}
-	}
+                ch = FontBold8x16[d2 + y*256];
+                for (x = 8; x > 0; x--)
+                {
+                        *d++ = (ch & 0x80) ? DebFpsCol : COL_BLACK;
+                        ch <<= 1;
+                }
+        }
 #endif
 
-	// wait for first scanline (without opening output to LCD)
-	rinx = gbContext.frame_read;
-	while (rinx == gbContext.frame_write)
-	{
-		if (GB_DispMode == GB_DISPMODE_MSG) return;
-	}
+        // wait for first scanline (without opening output to LCD)
+        rinx = gbContext.frame_read;
+        while (rinx == gbContext.frame_write)
+        {
+                if (GB_DispMode == GB_DISPMODE_MSG) return;
+        }
 
-	// do screenshot
-	y = gbContext.frame_rline;
-	dmb();
-	if (DoEmuScreenShotReq && (y == 0))
-	{
-		DoEmuScreenShot = True;	// request to do emulator screenshot
-		dmb();
-		DoEmuScreenShotReq = False;
-		dmb();
-	}
+        // do screenshot
+        y = gbContext.frame_rline;
+        dmb();
+        if (DoEmuScreenShotReq && (y == 0))
+        {
+                DoEmuScreenShot = True; // request to do emulator screenshot
+                dmb();
+                DoEmuScreenShotReq = False;
+                dmb();
+        }
 
-	// start sending image data
-	DispStartImg(0, WIDTH, y, HEIGHT);
+        for (; y < HEIGHT; )
+        {
+                // wait for scan line to be ready
+                rinx = gbContext.frame_read;
+                while (rinx == gbContext.frame_write)
+                {
+                        if (GB_DispMode == GB_DISPMODE_MSG) return;
+                }
 
-	ys2 = y*LCD_HEIGHT/HEIGHT;
+                ys = lut_y[y];
+                s = &gbContext.framebuf[rinx*LCD_WIDTH];
 
-	for (; y < HEIGHT;)
-	{
-		// wait for scan line to be ready
-		rinx = gbContext.frame_read;
-		while (rinx == gbContext.frame_write)
-		{
-			if (GB_DispMode == GB_DISPMODE_MSG)
-			{
-				DispStopImg();
-				return;
-			}
-		}
+                DispStartImg(0, WIDTH, y, y+1);
 
-		// source address
-		ys = ys2;
-		s = &gbContext.framebuf[rinx*LCD_WIDTH];
-
-#if DEB_FPS			// debug display FPS
+#if DEB_FPS                     // debug display FPS
                if (y < 16)
                {
                        u16* s2 = &buf[16*y];
                        for (x = 0; x < WIDTH; x++)
                        {
-                               int xs2 = x * LCD_WIDTH / WIDTH;
                                if (x < 16)
-                                       c = s2[x];
+                                       linebuf[x] = s2[x];
                                else
-                                       c = s[xs2];
-                               DispSendImg2(c);
+                                       linebuf[x] = s[lut_x[x]];
                        }
                }
                else
 #endif
-               for (x = 0; x < WIDTH; x++)
                {
-                       int xs2 = x * LCD_WIDTH / WIDTH;
-                       c = s[xs2];
-                       DispSendImg2(c);
+                       for (x = 0; x < WIDTH; x++) linebuf[x] = s[lut_x[x]];
                }
 
-		// next source Y
-		// Check case: y = 239, old ys = 239*144/240 = 143, new ys2 = 240*144/240 = 144, it is OK
-		y++;
-		ys2 = y*LCD_HEIGHT/HEIGHT;
+                DispWriteDataDMA(linebuf, WIDTH*2);
+                while (SPI_IsBusy(DISP_SPI)) SPI_RxFlush(DISP_SPI);
+                DispStopImg();
 
-		// update read index - only if we will not need this scan line again
-		if (ys != ys2)
-		{
-			dmb();
+                int nexty = y + 1;
+                ys2 = (nexty < HEIGHT) ? lut_y[nexty] : LCD_HEIGHT;
 
-			rinx++;	// increase read index
-			if (rinx >= LCD_FRAMEHEIGHT) rinx = 0; // wrap read index
-			gbContext.frame_read = rinx;
+                if (ys != ys2)
+                {
+                        dmb();
 
-			dmb();
-		}
+                        rinx++;
+                        if (rinx >= LCD_FRAMEHEIGHT) rinx = 0;
+                        gbContext.frame_read = rinx;
 
-		// increase Y
-		rinx = gbContext.frame_rline + 1; // increase absolute line
-		if (rinx >= HEIGHT) rinx = 0; // wrap current line
-		gbContext.frame_rline = rinx;
+                        dmb();
+                }
 
-		// slow down FPS to speed up emulation
-		u32 del = DelayLineUs;
-		u32 line = LastLineUs;
-		while ((u32)(Time() - line) < del) {}
-		LastLineUs = Time();
-	}
+                // increase Y
+                y = nexty;
+                rinx = gbContext.frame_rline + 1;
+                if (rinx >= HEIGHT) rinx = 0;
+                gbContext.frame_rline = rinx;
 
-	// stop sending data
-	DispStopImg();
+                // slow down FPS to speed up emulation
+                u32 del = DelayLineUs;
+                u32 line = LastLineUs;
+                while ((u32)(Time() - line) < del) {}
+                LastLineUs = Time();
+        }
 }
 
 // PWM audio interrupt handler
@@ -1092,6 +1082,8 @@ void GB_Setup()
 
 	// clear context
 	memset(&gbContext, 0, sizeof(gbContext));
+        for (int i = 0; i < WIDTH; i++) lut_x[i] = (i * LCD_WIDTH) / WIDTH;
+        for (int j = 0; j < HEIGHT; j++) lut_y[j] = (j * LCD_HEIGHT) / HEIGHT;
 
 	// select colorization palette
 	gbSelectColorizationPalette();
