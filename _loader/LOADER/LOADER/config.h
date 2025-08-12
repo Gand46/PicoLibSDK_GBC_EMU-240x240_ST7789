@@ -22,7 +22,7 @@
 // to change from the default configuration in config_def.h.
 // *********
 
-#define WIDTH		320		// screen width
+#define WIDTH		240		// screen width
 #define HEIGHT		240		// screen height
 
 #if USE_PICOPADHSTX		// use PicoPadHSTX device configuration
