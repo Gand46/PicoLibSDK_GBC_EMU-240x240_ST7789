@@ -1,3 +1,5 @@
+#ifndef LOADER_MAIN_IMPLEMENTATION
+#define LOADER_MAIN_IMPLEMENTATION
 
 // ****************************************************************************
 //
@@ -17,6 +19,16 @@
 // Flag: BOOT3_LOADER=1 ... we compile the boot3 loader, otherwise it's an application
 
 #include "../include.h"
+
+#ifndef PROGRESS_W
+#define PROGRESS_W (WIDTH - 64)
+#endif
+#ifndef PROGRESS_X
+#define PROGRESS_X ((WIDTH - PROGRESS_W)/2)
+#endif
+#ifndef PROGRESS_H
+#define PROGRESS_H 16
+#endif
 
 // custom frame buffer - used as buffer to load UF2 program into RAM
 ALIGNED FRAMETYPE FrameBuf[CUSTOM_FRAMEBUF_SIZE];
@@ -748,7 +760,7 @@ void Preview()
 		break;
 
 	// loading text
-	//	- text width = 26 characters
+	//	- text width = 20 characters
 	//	- ^ is prefix of control characters
 	//		^^ ... print ^ character
 	//		^1..^9 ... print character with code 1..9
@@ -767,7 +779,7 @@ void Preview()
 		inv = 0;
 
 		// set coordinates
-		DispX = (TEXTW2+1)/2;
+                DispX = FILECOLW*FONTW/FONTW2;
 		DispY = PrevLine;
 
 		// decode one row (i = relative character position)
@@ -1008,20 +1020,20 @@ void RunApp()
 // display progress bar
 void Progress(int i, int n, int y, u16 col)
 {
-	// wait for VSync scanline
-	VgaWaitVSync();
+        // wait for VSync scanline
+        VgaWaitVSync();
 
-#define PROGRESS_X 32
-#define PROGRESS_W 256
-#define PROGRESS_H 16
+        const int progressW = PROGRESS_W;
+        const int progressX = PROGRESS_X;
+        const int progressH = PROGRESS_H;
 
-	int w = i*PROGRESS_W/n;
-	if (w > PROGRESS_W) w = PROGRESS_W;
+        int w = i*progressW/n;
+        if (w > progressW) w = progressW;
 
-	DrawFrame(PROGRESS_X-2, y-2, PROGRESS_W+4, PROGRESS_H+4, COL_WHITE);
-	DrawRect(PROGRESS_X, y, PROGRESS_W, PROGRESS_H, COL_GRAY);
-	DrawRect(PROGRESS_X, y, w, PROGRESS_H, col);
-	DispUpdate();
+        DrawFrame(progressX-2, y-2, progressW+4, progressH+4, COL_WHITE);
+        DrawRect(progressX, y, progressW, progressH, COL_GRAY);
+        DrawRect(progressX, y, w, progressH, col);
+        DispUpdate();
 }
 
 // display big info text
@@ -1190,10 +1202,12 @@ void Battery()
 		y += 34 + 20;
 
 #if !USE_PICOINO10 && !USE_PICOTRON
-		DrawText("A=ScreenSaver while Charging:", PROGRESS_X-4, y, COL_WHITE);
-		DrawTextBg(ConfigGetScreenSaver() ? "ON " : "off", PROGRESS_X-4+30*8, y, COL_WHITE, COL_BLACK);
+               const char* ssText = "ScreenSaver while Charging";
+               int x = (WIDTH - (StrLen(ssText)+4)*8)/2;
+               DrawText(ssText, x, y, COL_WHITE);
+               DrawTextBg(ConfigGetScreenSaver() ? ":ON " : ":OFF", x + StrLen(ssText)*8, y, COL_WHITE, COL_BLACK);
 #endif
-		y += 25;
+               y += 25;
 
 		// volume
 		DrawText("Volume UP/DOWN:", PROGRESS_X, y, COL_WHITE);
@@ -1204,7 +1218,7 @@ void Battery()
 		if (vol > (CONFIG_VOLUME_FULL+CONFIG_VOLUME_MAX)/2) col = COL_RED;
 		Progress(vol, CONFIG_VOLUME_MAX, y, col);
 		y += 20;
-		DrawText("0%    50%   100%  150%  200%  250%", 26, y, COL_WHITE);
+               DrawText("0% 50% 100% 150% 200% 250%", PROGRESS_X + (PROGRESS_W - StrLen("0% 50% 100% 150% 200% 250%")*8)/2, y, COL_WHITE);
 		y += 25;
 
 		// bright
@@ -1212,7 +1226,7 @@ void Battery()
 		y += 16;
 		Progress(ConfigGetBacklight(), CONFIG_BACKLIGHT_MAX, y, COL_GREEN);
 		y += 20;
-		DrawText("0   1   2   3   4   5   6   7   8", 26, y, COL_WHITE);
+               DrawText("0 1 2 3 4 5 6 7 8", PROGRESS_X + (PROGRESS_W - StrLen("0 1 2 3 4 5 6 7 8")*8)/2, y, COL_WHITE);
 
 		// help
 #if USE_PICOINO10 || USE_PICOTRON
@@ -1324,45 +1338,55 @@ void BootScreenSaver()
 	KeyFlush();
 
 	// wait for continue
-	while (True)
-	{
-		// counter
-		for (cnt = 5; cnt > 0; cnt--)
-		{
-			// clear screen
-			DrawClear();
+        while (True)
+        {
+        const char* msg = "Going To Sleep:";
+        int msgw = 8 * strlen(msg);
+        int totalw = msgw + 8; // reserve space for countdown digit
+        if (totalw > WIDTH) {
+                msg = "Sleep:"; // fall back to shorter text
+                msgw = 8 * strlen(msg);
+                totalw = msgw + 8;
+        }
+        int msgx = (WIDTH - totalw) / 2;
 
-			// title
-			SelFont8x16();
-			DrawText2("Going To Sleep:", (WIDTH - 16*16)/2, 50, COL_YELLOW);
+        // counter
+        for (cnt = 5; cnt > 0; cnt--)
+        {
+                // clear screen
+                DrawClear();
 
-			// counter
-			DrawChar2((char)(cnt + '0'), (WIDTH - 16*16)/2 + 15*16, 50, COL_YELLOW);
+                // title
+                SelFont8x16();
+                DrawText(msg, msgx, 50, COL_YELLOW);
 
-			// prompt
-			DrawText("Press any key to start...", (WIDTH - 25*8)/2, HEIGHT - 50, COL_WHITE);
+                // counter
+                DrawChar((char)(cnt + '0'), msgx + msgw, 50, COL_YELLOW);
 
-			// display update
-			DispUpdate();
+                // prompt
+                DrawText("Press any key to start...", (WIDTH - 25*8)/2, HEIGHT - 50, COL_WHITE);
 
-			// wait 1 second
-			for (j = 100; j > 0; j--)
-			{
-				if (KeyGet() != NOKEY) return;
-				WaitMs(10);
-			}
-		}
+                // display update
+                DispUpdate();
 
-		// going to sleep
-		DrawClear();
-		DispUpdate();
-		DispBacklight(0);
+                // wait 1 second
+                for (j = 100; j > 0; j--)
+                {
+                        if (KeyGet() != NOKEY) return;
+                        WaitMs(10);
+                }
+        }
 
-		// wait for a key
-		while (KeyGet() == NOKEY) {}
+        // going to sleep
+        DrawClear();
+        DispUpdate();
+        DispBacklight(0);
 
-		// backlight update
-		DispBacklightUpdate();
+        // wait for a key
+        while (KeyGet() == NOKEY) {}
+
+        // backlight update
+        DispBacklightUpdate();
 	}
 }
 #endif
@@ -1919,6 +1943,8 @@ int main()
 		}
 
 		// preview
-		Preview();
-	}
+                Preview();
+        }
 }
+
+#endif // LOADER_MAIN_IMPLEMENTATION
