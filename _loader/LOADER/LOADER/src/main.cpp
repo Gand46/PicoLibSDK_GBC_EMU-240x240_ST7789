@@ -1324,45 +1324,55 @@ void BootScreenSaver()
 	KeyFlush();
 
 	// wait for continue
-	while (True)
-	{
-		// counter
-		for (cnt = 5; cnt > 0; cnt--)
-		{
-			// clear screen
-			DrawClear();
+        while (True)
+        {
+        const char* msg = "Going To Sleep:";
+        int msgw = 8 * strlen(msg);
+        int totalw = msgw + 8; // reserve space for countdown digit
+        if (totalw > WIDTH) {
+                msg = "Sleep:"; // fall back to shorter text
+                msgw = 8 * strlen(msg);
+                totalw = msgw + 8;
+        }
+        int msgx = (WIDTH - totalw) / 2;
 
-			// title
-			SelFont8x16();
-			DrawText2("Going To Sleep:", (WIDTH - 16*16)/2, 50, COL_YELLOW);
+        // counter
+        for (cnt = 5; cnt > 0; cnt--)
+        {
+                // clear screen
+                DrawClear();
 
-			// counter
-			DrawChar2((char)(cnt + '0'), (WIDTH - 16*16)/2 + 15*16, 50, COL_YELLOW);
+                // title
+                SelFont8x16();
+                DrawText(msg, msgx, 50, COL_YELLOW);
 
-			// prompt
-			DrawText("Press any key to start...", (WIDTH - 25*8)/2, HEIGHT - 50, COL_WHITE);
+                // counter
+                DrawChar((char)(cnt + '0'), msgx + msgw, 50, COL_YELLOW);
 
-			// display update
-			DispUpdate();
+                // prompt
+                DrawText("Press any key to start...", (WIDTH - 25*8)/2, HEIGHT - 50, COL_WHITE);
 
-			// wait 1 second
-			for (j = 100; j > 0; j--)
-			{
-				if (KeyGet() != NOKEY) return;
-				WaitMs(10);
-			}
-		}
+                // display update
+                DispUpdate();
 
-		// going to sleep
-		DrawClear();
-		DispUpdate();
-		DispBacklight(0);
+                // wait 1 second
+                for (j = 100; j > 0; j--)
+                {
+                        if (KeyGet() != NOKEY) return;
+                        WaitMs(10);
+                }
+        }
 
-		// wait for a key
-		while (KeyGet() == NOKEY) {}
+        // going to sleep
+        DrawClear();
+        DispUpdate();
+        DispBacklight(0);
 
-		// backlight update
-		DispBacklightUpdate();
+        // wait for a key
+        while (KeyGet() == NOKEY) {}
+
+        // backlight update
+        DispBacklightUpdate();
 	}
 }
 #endif
