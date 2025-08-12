@@ -35,13 +35,13 @@
 // text of file list
 //#define FONTW		8	// font width
 //#define FONTH		16	// font height
-#define TEXTW		(WIDTH/FONTW) // number of characters per row (=320/8=40)
+#define TEXTW		(WIDTH/FONTW) // number of characters per row (=240/8=30)
 #define TEXTH		(HEIGHT/FONTH) // number of rows (=240/16=15)
 
 // text of preview (preview field width = 20 characters, height = 15 rows)
 #define FONTW2		6	// font width
 #define FONTH2		8	// font height
-#define TEXTW2		(WIDTH/FONTW2) // number of characters per row (=320/6=53)
+#define TEXTW2		(WIDTH/FONTW2) // number of characters per row (=240/6=40)
 #define TEXTH2		(HEIGHT/FONTH2) // number of rows (=240/8=30)
 
 // files
@@ -49,7 +49,7 @@
 #define MAXFILES	1024	// max files in one directory
 #define NAMELEN		9	// max. length of filename without extension and with terminating 0
 #define FILEROWS	(TEXTH-2) // rows of files (=13)
-#define FILECOLW	20	// width of file panel
+#define FILECOLW	(TEXTW/2)	// width of file panel
 
 // file entry descriptor (10 bytes)
 //#define ATTR_RO	B0	// Read only
@@ -92,18 +92,18 @@ typedef struct { // 10 bytes
 typedef struct {
 	// BMP file header (size 14 bytes)
 	u16	bfType;			// 0x00: magic, 'B' 'M' = 0x4D42
-	u32	bfSize;			// 0x02: file size, aligned to DWORD = 70 + 320*240*2 + 2 = 153672 = 0x25848
+	u32	bfSize;			// 0x02: file size, aligned to DWORD = 70 + 240*240*2 + 2 = 115272 = 0x1C248
 	u16	bfReserved1;		// 0x06: = 0
 	u16	bfReserved2;		// 0x08: = 0
 	u32	bfOffBits;		// 0x0A: offset of data bits after file header = 70 (0x46)
 	// BMP info header (size 40 bytes)
 	u32	biSize;			// 0x0E: size of this info header = 56 (0x38)
-	s32	biWidth;		// 0x12: width = 320 (0x140)
+	s32	biWidth;		// 0x12: width = 240 (0xF0)
 	s32	biHeight;		// 0x16: height, negate if flip row order = -240 (0xFFFFFF10)
 	u16	biPlanes;		// 0x1A: planes = 1
 	u16	biBitCount;		// 0x1C: number of bits per pixel = 16
 	u32	biCompression;		// 0x1E: compression = 3 (BI_BITFIELDS)
-	u32	biSizeImage;		// 0x22: size of data of image + aligned file = 320*240*2 + 2 = 153602 (0x25802)
+	u32	biSizeImage;		// 0x22: size of data of image + aligned file = 240*240*2 + 2 = 115202 (0x1C202)
 	s32	biXPelsPerMeter;	// 0x26: X pels per meter = 2834 (= 0xB12)
 	s32	biYPelsPerMeter;	// 0x2A: Y pels per meter = 2834 (= 0xB12)
 	u32	biClrUsed;		// 0x2E: number of user colors (0 = all)
