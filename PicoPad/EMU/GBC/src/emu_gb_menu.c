@@ -487,9 +487,10 @@ void GB_MenuDraw()
 	GB_TextSetCol(COL_MAGENTA);
 	GB_PrepSaveFile(GB_MenuSlot); // prepare save filename (0..9, -1=default)
 	i = 0;
-	if (SaveNameLen > GB_MSG_WIDTH) i = SaveNameLen - GB_MSG_WIDTH;
-	GB_TextPrint(&HomePath[i]);
-	GB_UnprepSaveFile(); // unprepare save filename
+       if (SaveNameLen > GB_MSG_WIDTH) i = SaveNameLen - GB_MSG_WIDTH;
+       GB_TextPrint(&HomePath[i]);
+       GB_TextPrintNL(1);
+       GB_UnprepSaveFile(); // unprepare save filename
 }
 
 // display emulator menu (return True to continue emulation)
