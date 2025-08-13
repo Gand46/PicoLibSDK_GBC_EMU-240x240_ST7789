@@ -17,7 +17,7 @@
 // >>> Keep tables and functions in RAM (without "const") for faster access.
 
 #define EMU_LCD_WIDTH   WIDTH	// LCD display width
-#define EMU_LCD_HEIGHT	240	// LCD display height
+#define EMU_LCD_HEIGHT  HEIGHT   // LCD display height
 
 // text screen buffer (only characters; 160 bytes)
 u8 GB_TextFrame[GB_MSG_WIDTH*GB_MSG_HEIGHT];
@@ -131,7 +131,7 @@ void GB_TextUpdate()
        u16* c = GB_TextColor;
        u16 cc, ccc;
        u8* s2;
-       const u8* f = FontBold8x16;
+       const u8* f = FONT;
        u16 bg = GB_TextBgColor;
        int rep = WIDTH / (GB_MSG_WIDTH*FONTH);
        int rem = WIDTH % (GB_MSG_WIDTH*FONTH);
@@ -140,11 +140,15 @@ void GB_TextUpdate()
 	Bool oldscreenshot = DoEmuScreenShot;
 	DoEmuScreenShot = False;
 
-	// start sending image data
-	DispStartImg(0, EMU_LCD_WIDTH, 0, EMU_LCD_HEIGHT);
+       // number of lines to draw
+       int lines = EMU_LCD_HEIGHT;
+       if (GB_MSG_LINES < lines) lines = GB_MSG_LINES;
 
-	// rows
-	for (line = 0; line < EMU_LCD_HEIGHT;)
+       // start sending image data
+       DispStartImg(0, EMU_LCD_WIDTH, 0, lines);
+
+       // rows
+       for (line = 0; line < lines;)
 	{
                cc = *c; // color of the row
                s2 = s; // start of text row
@@ -180,20 +184,27 @@ void GB_TextUpdate()
 		line++;
 
 		// odd line - do nothing (repeat)
-		if (((line & 1) == 0) || (line >= 7*32))
+                if (((line & 1) == 0) || (line >= GB_MSG_BTMLINE))
 		{
 			// shift to next line of the font
 			f += 256;
 
 			// next row after 32 lines
-			if ((line & 0x1f) == 0)
+                        if (((line & (2*FONTH-1)) == 0) || (((line & (FONTH-1)) == 0) && (line >= GB_MSG_BTMLINE)))
 			{
 				c++; // color of the row
 				s = s2; // start of text row
-				f = FontBold8x16; // font
+                                f = FONT; // font
 			}
 		}
 	}
+
+
+       // fill remaining lines with background color
+       for (; line < lines; line++)
+       {
+               for (col = EMU_LCD_WIDTH; col > 0; col--) DispSendImg2(bg);
+       }
 
 	// stop sending data
 	DispStopImg();

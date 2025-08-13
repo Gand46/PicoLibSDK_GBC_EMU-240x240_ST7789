@@ -137,72 +137,73 @@ void GB_TextUpdate()
        int rep = WIDTH / (GB_MSG_WIDTH*FONTH);
        int rem = WIDTH % (GB_MSG_WIDTH*FONTH);
 
-	// start sending image data
-	DispStartImg(0, EMU_LCD_WIDTH, 0, EMU_LCD_HEIGHT);
+       // number of lines to draw
+       int lines = EMU_LCD_HEIGHT;
+       if (GB_MSG_LINES < lines) lines = GB_MSG_LINES;
 
-	// rows
-	for (line = 0; line < EMU_LCD_HEIGHT;)
-	{
+        // start sending only the required number of lines
+        DispStartImg(0, EMU_LCD_WIDTH, 0, lines);
+
+        // rows with text
+        for (line = 0; line < lines;)
+        {
                cc = *c; // color of the row
                s2 = s; // start of text row
                int acc = 0;
 
                // columns of text row
-               if (line < GB_MSG_LINES)
+               for (col = 0; col < GB_MSG_WIDTH; col++)
                {
-                       for (col = 0; col < GB_MSG_WIDTH; col++)
+                       // get character
+                       ch = *s2++;
+
+                       // get font pixels
+                       ch = f[ch];
+
+                       // draw pixels
+                       for (pix = 8; pix > 0; pix--)
                        {
-                               // get character
-                               ch = *s2++;
-
-                               // get font pixels
-                               ch = f[ch];
-
-                               // draw pixels
-                               for (pix = 8; pix > 0; pix--)
+                               // send color of the pixel (or background color)
+                               ccc = ((ch & 0x80) != 0) ? cc : bg;
+                               int n = rep;
+                               acc += rem;
+                               if (acc >= GB_MSG_WIDTH*FONTH)
                                {
-                                       // send color of the pixel (or black color of the background)
-                                       ccc = ((ch & 0x80) != 0) ? cc : bg;
-                                       int n = rep;
-                                       acc += rem;
-                                       if (acc >= GB_MSG_WIDTH*FONTH)
-                                       {
-                                               n++;
-                                               acc -= GB_MSG_WIDTH*FONTH;
-                                       }
-                                       for (; n > 0; n--) DispSendImg2(ccc);
-                                       ch <<= 1;
+                                       n++;
+                                       acc -= GB_MSG_WIDTH*FONTH;
                                }
+                               for (; n > 0; n--) DispSendImg2(ccc);
+                               ch <<= 1;
                        }
                }
 
-		// columns of empty row
-		else
-		{
-			for (col = EMU_LCD_WIDTH; col > 0; col--) DispSendImg2(COL_BLACK);
-		}
+                // increase line
+                line++;
 
-		// increase line
-		line++;
+                // odd line - do nothing (repeat)
+                if (((line & 1) == 0) || (line >= GB_MSG_BTMLINE))
+                {
+                        // shift to next line of the font
+                        f += 256;
 
-		// odd line - do nothing (repeat)
-		if (((line & 1) == 0) || (line >= GB_MSG_BTMLINE))
-		{
-			// shift to next line of the font
-			f += 256;
+                        // next row after 32 lines
+                        if (((line & (2*FONTH-1)) == 0) || (((line & (FONTH-1)) == 0) && (line >= GB_MSG_BTMLINE)))
+                        {
+                                c++; // color of the row
+                                s = s2; // start of text row
+                                f = FONT; // font
+                        }
+                }
+        }
 
-			// next row after 32 lines
-			if (((line & (2*FONTH-1)) == 0) || (((line & (FONTH-1)) == 0) && (line >= GB_MSG_BTMLINE)))
-			{
-				c++; // color of the row
-				s = s2; // start of text row
-				f = FONT; // font
-			}
-		}
-	}
+       // fill remaining lines with background color
+       for (; line < lines; line++)
+       {
+               for (col = EMU_LCD_WIDTH; col > 0; col--) DispSendImg2(bg);
+       }
 
-	// stop sending data
-	DispStopImg();
+        // stop sending data
+        DispStopImg();
 }
 
 /*

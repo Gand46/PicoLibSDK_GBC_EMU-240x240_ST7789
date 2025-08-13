@@ -19,7 +19,9 @@
 //	SelFont8x16();
 
 #define GB_MSG_WIDTH    (WIDTH*2/(3*8))   // message text width (1 character = 12 pixels width)
-#define GB_MSG_HEIGHT	((HEIGHT+2*16-1)/(2*16)) // message text height of window (1 character = 32 lined height; = 8)
+#define GB_MSG_HEIGHT   11              // message text height of window, 4 rows 2*height, 7 rows 1*height
+#define GB_MSG_BTMLINE  (4*FONTH*2)     // bottom line to start 1*height rows
+#define GB_MSG_LINES    (4*FONTH*2 + 7*FONTH) // height of message window in graphics lines
 
 // text screen buffer (only characters; 160 bytes)
 extern u8 GB_TextFrame[GB_MSG_WIDTH*GB_MSG_HEIGHT];

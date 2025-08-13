@@ -434,11 +434,8 @@ void GB_MenuDraw()
 	// 6) Up/Dn load/save
 	GB_TextPrint("\n\rLe/Ri load/save");
 
-	// 7)
-	GB_TextY++;
-
-	// set info color
-	GB_TextSetCol(COL_LTGRAY);
+        // set info color
+        GB_TextSetCol(COL_LTGRAY);
 
 	// 8) DEV=GBC MBC=1 PAL=23
 	GB_TextPrint("\n\rDEV=");
