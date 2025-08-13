@@ -133,8 +133,8 @@ void GB_TextUpdate()
        u8* s2;
        const u8* f = FontBold8x16;
        u16 bg = GB_TextBgColor;
-       int rep = WIDTH / (GB_MSG_WIDTH*FONTH);
-       int rem = WIDTH % (GB_MSG_WIDTH*FONTH);
+       int rep = WIDTH / (GB_MSG_WIDTH*FONTW);
+       int rem = WIDTH % (GB_MSG_WIDTH*FONTW);
 
 	// do not screenshot this screen
 	Bool oldscreenshot = DoEmuScreenShot;
@@ -166,34 +166,30 @@ void GB_TextUpdate()
                                ccc = ((ch & 0x80) != 0) ? cc : bg;
                                int n = rep;
                                acc += rem;
-                               if (acc >= GB_MSG_WIDTH*FONTH)
+                               if (acc >= GB_MSG_WIDTH*FONTW)
                                {
                                        n++;
-                                       acc -= GB_MSG_WIDTH*FONTH;
+                                       acc -= GB_MSG_WIDTH*FONTW;
                                }
                                for (; n > 0; n--) DispSendImg2(ccc);
                                ch <<= 1;
                        }
                }
 
-		// increase line
-		line++;
+               // increase line
+               line++;
 
-		// odd line - do nothing (repeat)
-		if (((line & 1) == 0) || (line >= 7*32))
-		{
-			// shift to next line of the font
-			f += 256;
+               // shift to next line of the font
+               f += 256;
 
-			// next row after 32 lines
-			if ((line & 0x1f) == 0)
-			{
-				c++; // color of the row
-				s = s2; // start of text row
-				f = FontBold8x16; // font
-			}
-		}
-	}
+               // next row after FONTH lines
+               if ((line & (FONTH-1)) == 0)
+               {
+                       c++;      // color of the row
+                       s = s2;   // start of text row
+                       f = FontBold8x16; // reset font pointer
+               }
+       }
 
 	// stop sending data
 	DispStopImg();
