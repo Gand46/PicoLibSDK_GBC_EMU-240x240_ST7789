@@ -668,7 +668,41 @@ void MscdWrite10()
 
 		// read data from host (Write10 callback will be called later from transfer complete)
 		UsbXferStart(MscdItf.ep_out, MscDataBuf, n, False);
-	}
+        }
+}
+
+// ---------------------------------------------------------------------------
+// Wrapper functions called by generic USB device driver
+
+void UsbDevMscInit()
+{
+    MscdInit();
+}
+
+void UsbDevMscTerm()
+{
+    // no special terminate, reuse reset
+    MscdReset();
+}
+
+void UsbDevMscReset()
+{
+    MscdReset();
+}
+
+u16 UsbDevMscOpen(const sUsbDescItf* itf, u16 max_len)
+{
+    return MscdOpen(itf, max_len);
+}
+
+Bool UsbDevMscCtrl(u8 stage)
+{
+    return MscdCtrlReq(stage, &UsbSetupRequest);
+}
+
+void UsbDevMscComp(u8 epinx, u8 xres, u16 len)
+{
+    MscdXferComp(epinx, xres, len);
 }
 
 #endif // USE_USB_DEV_MSC	// use USB MSC Mass Storage Class (device)

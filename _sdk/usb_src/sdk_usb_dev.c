@@ -36,7 +36,7 @@
 //#include "../usb_inc/sdk_usb_dev_dfu.h"	// USB Firmware Upgrade Device Class (device)
 #include "../usb_inc/sdk_usb_dev_hid.h"	// USB Human Interface Device Class (device)
 //#include "../usb_inc/sdk_usb_dev_midi.h" // USB Midi Device Class (device)
-//#include "../usb_inc/sdk_usb_dev_msc.h"	// USB Mass Storage Class (device)
+#include "../usb_inc/sdk_usb_dev_msc.h"	// USB Mass Storage Class (device)
 //#include "../usb_inc/sdk_usb_dev_net.h"	// USB Network Adapter Device Class (device)
 //#include "../usb_inc/sdk_usb_dev_tmc.h"	// USB Test and Measurement Device Class (device)
 //#include "../usb_inc/sdk_usb_dev_vendor.h"  // USB Vendor Device Class (device)
@@ -83,7 +83,6 @@ const sUsbDevDrv UsbDevDrv[] = {
 	},
 #endif
 
-/*
 #if USE_USB_DEV_MSC	// use USB MSC Mass Storage Class (device)
 	{
 		UsbDevMscInit,		// initialize class driver
@@ -95,7 +94,6 @@ const sUsbDevDrv UsbDevDrv[] = {
 		NULL,			// receiving SOF (start of frame; NULL=not used)
 	},
 #endif
-*/
 
 #if USE_USB_DEV_HID	// use USB HID Human Interface Device (device)
 	{
