@@ -19,7 +19,7 @@
 #define EMU_LCD_WIDTH   WIDTH	// LCD display width
 #define EMU_LCD_HEIGHT	HEIGHT	// LCD display height
 
-// text screen buffer (only characters; 160 bytes)
+// text screen buffer (only characters; ~315 bytes on 240x240)
 u8 GB_TextFrame[GB_MSG_WIDTH*GB_MSG_HEIGHT];
 
 // colors of rows
