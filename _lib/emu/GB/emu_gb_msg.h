@@ -18,10 +18,10 @@
 
 //	SelFont8x16();
 
-#define GB_MSG_WIDTH    (WIDTH*2/(3*8))   // message text width (1 character = 12 pixels width)
+#define GB_MSG_WIDTH    (WIDTH*21/240)    // message text width (~5% smaller, ~11 px per char)
 #define GB_MSG_HEIGHT   (HEIGHT / FONTH)  // message text height of window
 
-// text screen buffer (only characters; 160 bytes)
+// text screen buffer (only characters; ~315 bytes on 240x240)
 extern u8 GB_TextFrame[GB_MSG_WIDTH*GB_MSG_HEIGHT];
 
 // colors of rows
