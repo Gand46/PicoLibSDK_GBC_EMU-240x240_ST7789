@@ -30,10 +30,10 @@
 #endif
 
 // simple placeholder size in sectors (can be adjusted by application)
-static u32 FlashSizeSect = 0;
+static u32 SpiFlashSizeSect = 0;
 
 // initialize SPI flash (returns False on error)
-Bool FlashInit()
+Bool SpiFlashInit()
 {
     // initialize SPI controller with default 1 MHz
     SPI_Init(SPIFLASH_SPI, 1000000);
@@ -41,13 +41,13 @@ Bool FlashInit()
 }
 
 // terminate SPI flash interface
-void FlashTerm()
+void SpiFlashTerm()
 {
     SPI_Term(SPIFLASH_SPI);
 }
 
 // read one sector from SPI flash (returns False on error)
-Bool FlashReadSect(u32 sect, u8* buf)
+Bool SpiFlashReadSect(u32 sect, u8* buf)
 {
     // this is only a stub implementation
     (void)sect;
@@ -57,7 +57,7 @@ Bool FlashReadSect(u32 sect, u8* buf)
 }
 
 // write one sector to SPI flash (returns False on error)
-Bool FlashWriteSect(u32 sect, const u8* buf)
+Bool SpiFlashWriteSect(u32 sect, const u8* buf)
 {
     // stub does nothing, report success
     (void)sect;
@@ -66,9 +66,9 @@ Bool FlashWriteSect(u32 sect, const u8* buf)
 }
 
 // get flash media size in sectors (returns 0 on error)
-u32 FlashMediaSize()
+u32 SpiFlashMediaSize()
 {
-    return FlashSizeSect;
+    return SpiFlashSizeSect;
 }
 
 #endif // USE_SPIFLASH

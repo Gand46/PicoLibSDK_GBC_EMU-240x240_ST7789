@@ -25,27 +25,27 @@
 
 Bool WearLevelInit()
 {
-    return FlashInit();
+    return SpiFlashInit();
 }
 
 void WearLevelTerm()
 {
-    FlashTerm();
+    SpiFlashTerm();
 }
 
 Bool WearLevelReadSect(u32 sect, u8* buf)
 {
-    return FlashReadSect(sect, buf);
+    return SpiFlashReadSect(sect, buf);
 }
 
 Bool WearLevelWriteSect(u32 sect, const u8* buf)
 {
-    return FlashWriteSect(sect, buf);
+    return SpiFlashWriteSect(sect, buf);
 }
 
 u32 WearLevelMediaSize()
 {
-    return FlashMediaSize();
+    return SpiFlashMediaSize();
 }
 
 #endif // USE_SPIFLASH

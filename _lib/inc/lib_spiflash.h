@@ -23,19 +23,19 @@ extern "C" {
 #endif
 
 // initialize SPI flash (returns False on error)
-Bool FlashInit();
+Bool SpiFlashInit();
 
 // terminate SPI flash interface
-void FlashTerm();
+void SpiFlashTerm();
 
 // read one sector from SPI flash (returns False on error)
-Bool FlashReadSect(u32 sect, u8* buf);
+Bool SpiFlashReadSect(u32 sect, u8* buf);
 
 // write one sector to SPI flash (returns False on error)
-Bool FlashWriteSect(u32 sect, const u8* buf);
+Bool SpiFlashWriteSect(u32 sect, const u8* buf);
 
 // get flash media size in sectors (returns 0 on error)
-u32 FlashMediaSize();
+u32 SpiFlashMediaSize();
 
 #ifdef __cplusplus
 }
