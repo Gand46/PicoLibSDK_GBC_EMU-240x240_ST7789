@@ -325,6 +325,14 @@ void MscdRead10();
 // Write 10 command (write data to media, request to get data from host)
 void MscdWrite10();
 
+// Wrappers used by generic USB device driver
+void UsbDevMscInit();
+void UsbDevMscTerm();
+void UsbDevMscReset();
+u16  UsbDevMscOpen(const sUsbDescItf* itf, u16 max_len);
+Bool UsbDevMscCtrl(u8 stage);
+void UsbDevMscComp(u8 epinx, u8 xres, u16 len);
+
 #ifdef __cplusplus
 }
 #endif

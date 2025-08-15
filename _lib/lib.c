@@ -146,6 +146,11 @@
 #include "src/lib_ringtx.c"
 #endif
 
+#if USE_SPIFLASH
+#include "src/lib_spiflash.c"
+#include "src/flash_wearlevel.c"
+#endif
+
 #if USE_SD
 #include "src/lib_sd.c"
 #endif

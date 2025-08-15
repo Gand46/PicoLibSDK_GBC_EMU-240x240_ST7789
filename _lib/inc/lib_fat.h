@@ -21,12 +21,24 @@
 #ifndef _LIB_FAT_H
 #define _LIB_FAT_H
 
-#include "lib_sd.h"
 #include "../../_sdk/sdk_addressmap.h"
+#if USE_SD
+#include "lib_sd.h"
+#endif
+#if USE_SPIFLASH
+#include "lib_spiflash.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+// Disk sector access callbacks configured by selected media
+extern Bool (*DiskReadSect)(u32 sect, u8* buffer);
+extern Bool (*DiskWriteSect)(u32 sect, const u8* buffer);
+
+// Get size of attached media in sectors
+u32 DiskMediaSize();
 
 #define PATHCHAR	'/'	// default path separator (can be '\\' too)
 
@@ -580,7 +592,7 @@ Bool GetDiskLabel();
 Bool SetDiskLabel(const char* label);
 
 // get media size in number of sectors (returns 0 on error)
-INLINE u32 GetMediaSize() { return SDMediaSize(); }
+INLINE u32 GetMediaSize() { return DiskMediaSize(); }
 
 // get media size in KB (returns 0 on error)
 INLINE u32 GetMediaSizeKB() { return GetMediaSize() >> 1; }

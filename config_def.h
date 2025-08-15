@@ -307,7 +307,7 @@ RAMSIZE		// RAM base size in bytes (256 KB or 512 KB)
 #endif
 
 #ifndef USE_USB_DEV_MSC
-#define USE_USB_DEV_MSC	0		// use USB MSC Mass Storage Class (device)
+#define USE_USB_DEV_MSC 1		// use USB MSC Mass Storage Class (device)
 #endif
 
 #ifndef USE_USB_DEV_NET
@@ -455,7 +455,7 @@ RAMSIZE		// RAM base size in bytes (256 KB or 512 KB)
 #endif
 
 #ifndef USE_FAT
-#define USE_FAT		0		// use FAT file system (lib_fat.c, lib_fat.h)
+#define USE_FAT         1		// use FAT file system (lib_fat.c, lib_fat.h)
 #endif
 
 #ifndef USE_FILESEL
@@ -516,6 +516,10 @@ RAMSIZE		// RAM base size in bytes (256 KB or 512 KB)
 
 #ifndef USE_RINGTX
 #define USE_RINGTX	0		// use Ring buffer with DMA transmitter (lib_ringtx.c, lib_ringtx.h)
+#endif
+
+#ifndef USE_SPIFLASH
+#define USE_SPIFLASH    1
 #endif
 
 #ifndef USE_SD
@@ -1013,7 +1017,7 @@ RAMSIZE		// RAM base size in bytes (256 KB or 512 KB)
 #endif
 
 #ifndef TEMP_BASE
-#define TEMP_BASE	0.706f		// temperature base voltage at 27°C (default value, use Config.temp_base)
+#define TEMP_BASE	0.706f		// temperature base voltage at 27Â°C (default value, use Config.temp_base)
 #endif
 
 #ifndef TEMP_SLOPE
@@ -1062,8 +1066,10 @@ RAMSIZE		// RAM base size in bytes (256 KB or 512 KB)
 #endif
 
 #if USE_FAT
+#if !USE_SPIFLASH
 #undef USE_SD
 #define USE_SD 1
+#endif
 #endif
 
 #if LOAD_FLASH_INFO

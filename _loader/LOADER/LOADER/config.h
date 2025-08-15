@@ -122,7 +122,8 @@
 #define USE_RTC		0		// use RTC Real-time clock (sdk_rtc.c, sdk_rtc.h)
 #define USE_STACKCHECK	0		// use Stack check (sdk_cpu.c, sdk_cpu.h)
 #define USE_UART	0		// use UART serial port (sdk_uart.c, sdk_uart.h)
-#define USE_USB		0		// use USB (sdk_usb_*.c, sdk_usb_*.h) (only if not using TinyUSB library)
+// enable USB stack for mass storage support
+#define USE_USB	1		// use USB (sdk_usb_*.c, sdk_usb_*.h) (only if not using TinyUSB library)
 //#define USE_WATCHDOG	1		// use Watchdog timer (sdk_watchdog.c, sdk_watchdog.h)
 
 // LIB
@@ -137,7 +138,7 @@
 #define USE_PWMSND	0		// use PWM sound output; set 1.. = number of channels (lib_pwmsnd.c, lib_pwmsnd.h)
 #define USE_RAND	0		// use Random number generator (lib_rand.c, lib_rand.h)
 #define USE_RECT	0		// use Rectangle (lib_rect.c, lib_rect.h)
-#define USE_RING	0		// use Ring buffer (lib_ring.c, lib_ring.h)
+#define USE_RING	1		// use Ring buffer (lib_ring.c, lib_ring.h)
 #define USE_RINGRX	0		// use Ring buffer with DMA receiver (lib_ringrx.c, lib_ringrx.h)
 #define USE_RINGTX	0		// use Ring buffer with DMA transmitter (lib_ringtx.c, lib_ringtx.h)
 #define USE_TEXTLIST	0		// use List of text strings (lib_textlist.c, lib_textlist.h)

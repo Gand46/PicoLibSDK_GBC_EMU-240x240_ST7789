@@ -23,6 +23,33 @@
 #include "../inc/lib_text.h"
 #include "../inc/lib_print.h"
 #include "../inc/lib_crc.h"
+#if USE_SPIFLASH
+#include "../inc/flash_wearlevel.h"
+#endif
+
+// default disk access callbacks
+#if USE_SPIFLASH
+Bool (*DiskReadSect)(u32, u8*) = WearLevelReadSect;
+Bool (*DiskWriteSect)(u32, const u8*) = WearLevelWriteSect;
+#elif USE_SD
+Bool (*DiskReadSect)(u32, u8*) = SDReadSect;
+Bool (*DiskWriteSect)(u32, const u8*) = SDWriteSect;
+#else
+Bool (*DiskReadSect)(u32, u8*) = NULL;
+Bool (*DiskWriteSect)(u32, const u8*) = NULL;
+#endif
+
+// get size of attached media in sectors
+u32 DiskMediaSize()
+{
+#if USE_SPIFLASH
+    return WearLevelMediaSize();
+#elif USE_SD
+    return SDMediaSize();
+#else
+    return 0;
+#endif
+}
 
 // disk buffer
 ALIGNED u8 DiskBuf[SECT_SIZE];
@@ -107,13 +134,13 @@ Bool Disk_FlushBuf()
 		DiskBufDirty = False;
 
 		// write sector to disk
-		if (!SDWriteSect(DiskBufSect, DiskBuf)) return False;
+            if (!DiskWriteSect(DiskBufSect, DiskBuf)) return False;
 
 		// write 2nd copy of FAT
 		if (	(DiskFS != FS_NONE) &&	// valid file system?
 			((u32)(DiskBufSect - FatBase) < FatSizeSect) && // is it 1st copy of FAT?
 			(FatNum == 2)) // 2 FATs ?
-			SDWriteSect(DiskBufSect + FatSizeSect, DiskBuf); // write into 2nd FAT
+                    DiskWriteSect(DiskBufSect + FatSizeSect, DiskBuf); // write into 2nd FAT
 	}
 	return True;
 }
@@ -135,7 +162,7 @@ Bool Disk_SyncFS()
 		fs->lastclust = ClustLast; // last allocated cluster
 		fs->bootsig = BOOTSIG; // boot signature
 		DiskBufSect = DiskBase + 1; // 2nd sector immediately after boot sector
-		SDWriteSect(DiskBufSect, DiskBuf);
+            DiskWriteSect(DiskBufSect, DiskBuf);
 		FSinfo = 0; // not dirty and not disabled
 	}
 	return True;
@@ -150,7 +177,7 @@ Bool Disk_MoveBuf(u32 sect)
 		if (!Disk_FlushBuf()) return False;
 
 		// read new sector
-		if (!SDReadSect(sect, DiskBuf))
+            if (!DiskReadSect(sect, DiskBuf))
 		{
 			DiskBufSect = SECT_NONE;
 			return False;
@@ -478,7 +505,7 @@ Bool Disk_DirClear(u32 clust)
 	u8 num = ClustSizeSect;
 	for (; num > 0; num--)
 	{
-		if (!SDWriteSect(sect, DiskBuf)) return False;
+            if (!DiskWriteSect(sect, DiskBuf)) return False;
 		sect++;
 	}
 
@@ -1572,7 +1599,7 @@ u32 FileRead(sFile* file, void* buf, u32 num)
 			n = num - read;
 			if (n >= SECT_SIZE)
 			{
-				if (!SDReadSect(sect, (u8*)buf)) break;
+                           if (!DiskReadSect(sect, (u8*)buf)) break;
 				n = SECT_SIZE;
 			}
 			else
@@ -1651,7 +1678,7 @@ u32 FileWrite(sFile* file, const void* buf, u32 num)
 			n = num - write;
 			if (n >= SECT_SIZE)
 			{
-				if (!SDWriteSect(sect, (const u8*)buf)) break;
+                           if (!DiskWriteSect(sect, (const u8*)buf)) break;
 				n = SECT_SIZE;
 			}
 			else
@@ -2620,7 +2647,7 @@ DISKFORMERR:
 	}
 
 	// get media size (in number of sectors ... max. 0xFFFFFFF6 sectors = 2 TB)
-	u32 mediasize = SDMediaSize();
+   u32 mediasize = DiskMediaSize();
 	if ((mediasize < (mbr ? 10 : 100)) || (mediasize > (u32)-10)) goto DISKFORMERR;
 
 	// hidden sectors
@@ -2677,7 +2704,7 @@ DISKFORMERR:
 		mbr->bootsig = BOOTSIG;
 
 		// write sector to disk
-		if (!SDWriteSect(0, DiskBuf)) goto DISKFORMERR;
+           if (!DiskWriteSect(0, DiskBuf)) goto DISKFORMERR;
 
 		// hidden sectors
 		hsect = 63;
@@ -2856,13 +2883,13 @@ DISKFORMERR:
 	b->bootsig = BOOTSIG; // boot signature
 
 	// write boot sector to disk
-	if (!SDWriteSect(hsect, DiskBuf)) goto DISKFORMERR;
+   if (!DiskWriteSect(hsect, DiskBuf)) goto DISKFORMERR;
 
 	// create FSINFO sector
 	if (fs2 == FS_FAT32)
 	{
 		// write backup boot sector to disk
-		if (!SDWriteSect(hsect + 6, DiskBuf)) goto DISKFORMERR;
+           if (!DiskWriteSect(hsect + 6, DiskBuf)) goto DISKFORMERR;
 
 		// prepare FSINFO sector
 		memset(DiskBuf, 0, SECT_SIZE - 2); // clear buffer
@@ -2873,10 +2900,10 @@ DISKFORMERR:
 		fi->lastclust = 2; // last allocated cluster
 
 		// write FSINFO sector to disk
-		if (!SDWriteSect(hsect + 1, DiskBuf)) goto DISKFORMERR;
+           if (!DiskWriteSect(hsect + 1, DiskBuf)) goto DISKFORMERR;
 
 		// write backup FSINFO sector to disk
-		if (!SDWriteSect(hsect + 7, DiskBuf)) goto DISKFORMERR;
+           if (!DiskWriteSect(hsect + 7, DiskBuf)) goto DISKFORMERR;
 	}
 
 	// prepare first sector of FAT table
@@ -2890,7 +2917,7 @@ DISKFORMERR:
 	// write sectors of FAT table
 	for (; fatsize > 0; fatsize--)
 	{
-		if (!SDWriteSect(hsect, DiskBuf)) goto DISKFORMERR;
+           if (!DiskWriteSect(hsect, DiskBuf)) goto DISKFORMERR;
 		hsect++;
 		memset(DiskBuf, 0, SECT_SIZE);
 	}
@@ -2900,7 +2927,7 @@ DISKFORMERR:
 	memset(DiskBuf, 0, SECT_SIZE);
 	for (; n > 0; n--)
 	{
-		if (!SDWriteSect(hsect, DiskBuf)) goto DISKFORMERR;
+           if (!DiskWriteSect(hsect, DiskBuf)) goto DISKFORMERR;
 		hsect++;
 	}
 
@@ -2908,7 +2935,7 @@ DISKFORMERR:
 	if (mbr)
 	{
 		// read sector from disk
-		if (!SDReadSect(0, DiskBuf)) goto DISKFORMERR;
+           if (!DiskReadSect(0, DiskBuf)) goto DISKFORMERR;
 
 		// update MBR
 		sMBR* mbr = (sMBR*)DiskBuf;
@@ -2920,7 +2947,7 @@ DISKFORMERR:
 		p->size = mediasize; // size of partition
 
 		// write sector to disk
-		if (!SDWriteSect(0, DiskBuf)) goto DISKFORMERR;
+           if (!DiskWriteSect(0, DiskBuf)) goto DISKFORMERR;
 	}
 
 	// remount the disk
