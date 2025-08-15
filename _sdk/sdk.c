@@ -162,6 +162,10 @@
 
 #include "usb_src/sdk_usb_dev.c"
 
+#if USE_USB_DEV_MSC
+#include "usb_src/sdk_usb_dev_msc.c"
+#endif
+
 #if USE_USB_DEV_CDC
 #include "usb_src/sdk_usb_dev_cdc.c"
 #endif
